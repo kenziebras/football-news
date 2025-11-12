@@ -1,25 +1,23 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from main.forms import NewsForm
 from main.models import News
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.core import serializers
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 import datetime
-from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.http import HttpResponseRedirect, JsonResponse
-from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.utils.html import strip_tags
+import requests
 import json
 
 @login_required(login_url='/login')
 def show_main(request):
-    filter_type = request.GET.get("filter", "all")  
+    filter_type = request.GET.get("filter", "all")  # default 'all'
 
     if filter_type == "all":
         news_list = News.objects.all()
@@ -27,9 +25,9 @@ def show_main(request):
         news_list = News.objects.filter(user=request.user)
 
     context = {
-        'npm': '240123456',
+        'npm': '2406437262',
         'name': request.user.username,
-        'class': 'PBP A',
+        'class': 'PBP C',
         'news_list': news_list,
         'last_login': request.COOKIES.get('last_login', 'Never')
     }
@@ -58,13 +56,20 @@ def show_news(request, id):
     context = {
         'news': news
     }
+
     return render(request, "news_detail.html", context)
-    
+
+def show_xml(request):
+    news_list = News.objects.all()
+
 def show_xml(request):
      news_list = News.objects.all()
      xml_data = serializers.serialize("xml", news_list)
      return HttpResponse(xml_data, content_type="application/xml")
- 
+
+def show_json(request):
+    news_list = News.objects.all()
+
 def show_json(request):
     news_list = News.objects.all()
     data = [
@@ -86,12 +91,12 @@ def show_json(request):
 
 def show_xml_by_id(request, news_id):
     try:
-       news_item = News.objects.filter(pk=news_id)
-       xml_data = serializers.serialize("xml", news_item)
-       return HttpResponse(xml_data, content_type="application/xml")
-    except News.DoesNotExist:
-       return HttpResponse(status=404)
-    
+        news_item = News.objects.filter(pk=news_id)
+        xml_data = serializers.serialize("xml", news_item)
+        return HttpResponse(xml_data, content_type="application/xml")
+    except:
+        return HttpResponse(status=404)
+
 def show_json_by_id(request, news_id):
     try:
         news = News.objects.select_related('user').get(pk=news_id)
@@ -166,8 +171,8 @@ def delete_news(request, id):
 @csrf_exempt
 @require_POST
 def add_news_entry_ajax(request):
-    title = strip_tags(request.POST.get("title"))
-    content = strip_tags(request.POST.get("content"))
+    title = strip_tags(request.POST.get("title")) # strip HTML tags!
+    content = strip_tags(request.POST.get("content")) # strip HTML tags!
     category = request.POST.get("category")
     thumbnail = request.POST.get("thumbnail")
     is_featured = request.POST.get("is_featured") == 'on'  # checkbox handling
@@ -185,20 +190,35 @@ def add_news_entry_ajax(request):
 
     return HttpResponse(b"CREATED", status=201)
 
+def proxy_image(request):
+    image_url = request.GET.get('url')
+    if not image_url:
+        return HttpResponse('No URL provided', status=400)
+    
+    try:
+        # Fetch image from external source
+        response = requests.get(image_url, timeout=10)
+        response.raise_for_status()
+        
+        # Return the image with proper content type
+        return HttpResponse(
+            response.content,
+            content_type=response.headers.get('Content-Type', 'image/jpeg')
+        )
+    except requests.RequestException as e:
+        return HttpResponse(f'Error fetching image: {str(e)}', status=500)
+    
 @csrf_exempt
 def create_news_flutter(request):
     if request.method == 'POST':
         data = json.loads(request.body)
-        title = strip_tags(data.get("title", ""))
-        content = strip_tags(data.get("content", ""))
+        title = strip_tags(data.get("title", ""))  # Strip HTML tags
+        content = strip_tags(data.get("content", ""))  # Strip HTML tags
         category = data.get("category", "")
         thumbnail = data.get("thumbnail", "")
         is_featured = data.get("is_featured", False)
         user = request.user
-
-        if not user.is_authenticated:
-            return JsonResponse({"status": "error", "message": "User not logged in"}, status=401)
-
+        
         new_news = News(
             title=title, 
             content=content,
@@ -208,7 +228,7 @@ def create_news_flutter(request):
             user=user
         )
         new_news.save()
-
+        
         return JsonResponse({"status": "success"}, status=200)
     else:
-        return JsonResponse({"status": "error", "message": "Invalid request method"}, status=401)
+        return JsonResponse({"status": "error"}, status=401)

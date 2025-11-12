@@ -31,10 +31,10 @@ PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "rusydan-mujtaba-footballnews.pbp.cs.ui.ac.id", "10.0.2.2"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "kenzie-nibras-footballnews.pbp.cs.ui.ac.id", "10.0.2.2"]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://rusydan-mujtaba-footballnews.pbp.cs.ui.ac.id"
+    "https://kenzie-nibras-footballnews.pbp.cs.ui.ac.id"
 ]
 
 # Application definition
@@ -55,12 +55,12 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'football_news.urls'
